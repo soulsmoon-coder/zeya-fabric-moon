@@ -1,0 +1,52 @@
+# Gradle
+.gradle/
+.gradle-user/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Run directory
+run/
+
+# IDE
+*.iml
+.idea/
+*.iws
+*.ipr
+
+# Logs
+*.log
+logs/
+
+# Minecraft
+crash-reports/
+debug.log
+latest.log
+server.log
+usercache.yml
+options.txt
+server.properties
+screenshots/
+config/
+mods/
+save_data/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temp files
+*.tmp
+*.bak
+*.swp
+*~
+
+# Artefatos de decompilacao / cache (nao fazem parte do codigo-fonte)
+/aegis/
+/net/
+/Microsoft/
+*.class
+
+# Backups locais e ferramentas de IA
+_backup_src_*/
+.junie/

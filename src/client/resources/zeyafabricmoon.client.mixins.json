@@ -1,0 +1,33 @@
+{
+  "required": true,
+  "package": "dev.zeya.fabricmoon.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "client": [
+    "AvatarRendererMixin",
+    "BossHealthOverlayAccessor",
+    "HumanoidArmorLayerMixin",
+    "CameraMixin",
+    "MinecraftCameraMixin",
+    "MouseHandlerMixin",
+    "FullbrightMixin",
+    "FishingHookAccessor",
+    "ServerTimePacketMixin",
+    "ServerPingPacketMixin",
+    "NetworkChannelOptimizerMixin",
+    "ChatScreenMixin",
+    "ChatHudMixin",
+    "ClientPacketListenerMixin",
+    "KeyCommandsKeyboardMixin",
+    "SlotLockLocalPlayerMixin",
+    "ContainerScreenAccessor",
+    "SlotLockGameModeMixin",
+    "EntityRenderStateMixin",
+    "LargeMobRenderScaleMixin",
+    "CombatDamagePacketMixin",
+    "InventoryScreenMixin",
+    "KeyMappingAccessor"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
