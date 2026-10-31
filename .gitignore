@@ -42,7 +42,7 @@ desktop.ini
 *~
 
 # Artefatos de decompilacao / cache (nao fazem parte do codigo-fonte)
-/aegis/
+/Zeya/
 /net/
 /Microsoft/
 *.class
