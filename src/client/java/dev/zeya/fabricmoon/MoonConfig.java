@@ -58,6 +58,7 @@ public final class MoonConfig {
    public static boolean combatHud = false;
    public static boolean combatHudShowDamage = true;
    public static boolean combatHudShowTargetHealth = false;
+   public static boolean combatHudDebugLabels = false;
    public static boolean networkOptimizer = true;
    public static boolean hypixelAutoRoute = true;
    public static int statsHudX = 4;
@@ -148,6 +149,7 @@ public final class MoonConfig {
             combatHud = Boolean.parseBoolean(properties.getProperty("combatHud", "false"));
             combatHudShowDamage = Boolean.parseBoolean(properties.getProperty("combatHudShowDamage", "true"));
             combatHudShowTargetHealth = Boolean.parseBoolean(properties.getProperty("combatHudShowTargetHealth", "false"));
+            combatHudDebugLabels = Boolean.parseBoolean(properties.getProperty("combatHudDebugLabels", "false"));
             networkOptimizer = Boolean.parseBoolean(properties.getProperty("networkOptimizer", "true"));
             hypixelAutoRoute = Boolean.parseBoolean(properties.getProperty("hypixelAutoRoute", "true"));
             statsHudX = clampHudPosition(parseInteger(properties, "statsHudX", 4));
@@ -326,6 +328,7 @@ public final class MoonConfig {
       properties.setProperty("combatHud", Boolean.toString(combatHud));
       properties.setProperty("combatHudShowDamage", Boolean.toString(combatHudShowDamage));
       properties.setProperty("combatHudShowTargetHealth", Boolean.toString(combatHudShowTargetHealth));
+      properties.setProperty("combatHudDebugLabels", Boolean.toString(combatHudDebugLabels));
       properties.setProperty("networkOptimizer", Boolean.toString(networkOptimizer));
       properties.setProperty("hypixelAutoRoute", Boolean.toString(hypixelAutoRoute));
       properties.setProperty("statsHudX", Integer.toString(statsHudX));

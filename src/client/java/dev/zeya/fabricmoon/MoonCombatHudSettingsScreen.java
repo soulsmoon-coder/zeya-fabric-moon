@@ -7,7 +7,7 @@ import net.minecraft.network.chat.Component;
 
 public final class MoonCombatHudSettingsScreen extends Screen {
    private static final int PANEL_WIDTH = 320;
-   private static final int PANEL_HEIGHT = 270;
+   private static final int PANEL_HEIGHT = 310;
 
    public MoonCombatHudSettingsScreen() {
       super(Component.literal("Combat HUD"));
@@ -15,7 +15,7 @@ public final class MoonCombatHudSettingsScreen extends Screen {
 
    protected void init() {
       int centerX = this.width / 2;
-      int top = MoonScreenStyle.panelTop(this.height, 270);
+      int top = MoonScreenStyle.panelTop(this.height, PANEL_HEIGHT);
       int buttonWidth = 270;
       int buttonX = centerX - buttonWidth / 2;
       this.addRenderableWidget(Button.builder(ZeyaFabricMoonClient.toggleLabel("Combat HUD", MoonConfig.combatHud), button -> {
@@ -36,11 +36,18 @@ public final class MoonCombatHudSettingsScreen extends Screen {
          }).bounds(buttonX, top + 112, buttonWidth, 22).build()
       );
       this.addRenderableWidget(
-         Button.builder(Component.literal("Resetar dano total"), button -> MoonCombatTracker.resetDamage()).bounds(buttonX, top + 150, buttonWidth, 22).build()
+         Button.builder(ZeyaFabricMoonClient.toggleLabel("Log de nomes/vida (debug)", MoonConfig.combatHudDebugLabels), button -> {
+            MoonConfig.combatHudDebugLabels = !MoonConfig.combatHudDebugLabels;
+            MoonConfig.save();
+            this.refreshWidgets();
+         }).bounds(buttonX, top + 144, buttonWidth, 22).build()
+      );
+      this.addRenderableWidget(
+         Button.builder(Component.literal("Resetar dano total"), button -> MoonCombatTracker.resetDamage()).bounds(buttonX, top + 184, buttonWidth, 22).build()
       );
       this.addRenderableWidget(
          Button.builder(Component.literal("Voltar"), button -> this.minecraft.gui.setScreen(new MoonSettingsScreen()))
-            .bounds(buttonX, top + 190, buttonWidth, 22)
+            .bounds(buttonX, top + 224, buttonWidth, 22)
             .build()
       );
    }
@@ -52,15 +59,15 @@ public final class MoonCombatHudSettingsScreen extends Screen {
 
    public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
       super.extractBackground(graphics, mouseX, mouseY, partialTick);
-      int top = MoonScreenStyle.panelTop(this.height, 270);
-      MoonScreenStyle.drawPanel(graphics, this.width / 2, top, 320, 270);
+      int top = MoonScreenStyle.panelTop(this.height, PANEL_HEIGHT);
+      MoonScreenStyle.drawPanel(graphics, this.width / 2, top, PANEL_WIDTH, PANEL_HEIGHT);
    }
 
    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
       super.extractRenderState(graphics, mouseX, mouseY, partialTick);
       int centerX = this.width / 2;
-      int top = MoonScreenStyle.panelTop(this.height, 270);
+      int top = MoonScreenStyle.panelTop(this.height, PANEL_HEIGHT);
       graphics.centeredText(this.font, this.title, centerX, top + 14, -1);
-      graphics.centeredText(this.font, "Valores estimados com dados recebidos pelo cliente.", centerX, top + 234, -7891030);
+      graphics.centeredText(this.font, "Valores estimados com dados recebidos pelo cliente.", centerX, top + 274, -7891030);
    }
 }

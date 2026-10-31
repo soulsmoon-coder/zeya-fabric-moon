@@ -34,9 +34,15 @@ e atributos continuam exatamente os do vanilla.
   blocos, desde que não haja bloco sólido no caminho. Armor Stands usados como
   marcadores são ignorados, e o alcance vale só para o HUD — não para interação.
 - **Leitor de vida** compatível com marcadores `HP`, `health`, `vida`, `life`,
-  corações e pares no formato `atual/máximo` (ex.: `20M/20M`). Também lê a boss
-  bar do servidor quando o nome dela traz a vida, usando o progresso da barra
-  para estimar o máximo.
+  corações e pares no formato `atual/máximo` (ex.: `20M/20M`), inclusive quando o
+  nome e a vida vêm na mesma linha do nametag. Também lê a boss bar do servidor
+  quando o nome dela traz a vida, usando o progresso da barra para estimar o
+  máximo, e o placar `below_name` quando o objetivo é de vida.
+- **Nomes do servidor**: o HUD procura nametags/hologramas (Text Display, Armor
+  Stand e entidades invisíveis com nome) num raio de 12 blocos na horizontal e
+  32 na vertical, e usa o nome da boss bar quando o mob ainda aparece com o nome
+  vanilla. O botão **Log de nomes/vida (debug)** no menu do Combat HUD grava no
+  log os textos encontrados para diagnóstico.
 - O Combat HUD tem fundo transparente e depende dos dados de vida visíveis ao
   cliente — servidores que os ocultam podem limitar o que aparece. Se o servidor
   desenhar a vida sem enviá-la como entidade ou nome visível, o HUD fica restrito

@@ -15,8 +15,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(LivingEntityRenderer.class)
 public abstract class LargeMobRenderScaleMixin {
-   private static final float MIN_SCALE_FACTOR = 0.05F;
-   private static final float MAX_SCALE_FACTOR = 4.0F;
+   private static final float MIN_SCALE_FACTOR = 0.02F;
+   private static final float MAX_SCALE_FACTOR = 20.0F;
 
    @Inject(
       method = "extractRenderState(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/client/renderer/entity/state/LivingEntityRenderState;F)V",
@@ -33,7 +33,7 @@ public abstract class LargeMobRenderScaleMixin {
                   if (!(entityHeight <= 0.05F)) {
                      float factor = player.getBbHeight() * MoonConfig.mobSize / entityHeight;
                      if (Float.isFinite(factor)) {
-                        state.scale = state.scale * Math.max(0.05F, Math.min(4.0F, factor));
+                        state.scale = state.scale * Math.max(0.02F, Math.min(20.0F, factor));
                      }
                   }
                }

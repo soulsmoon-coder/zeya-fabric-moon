@@ -152,6 +152,7 @@ public final class MoonHud {
          } else if (client.hitResult instanceof EntityHitResult hit
             && hit.getEntity() instanceof LivingEntity livingEntity
             && !(livingEntity instanceof ArmorStand)
+            && !(livingEntity instanceof net.minecraft.world.entity.player.Player)
             && livingEntity.isAlive()
             && !livingEntity.isSpectator()) {
             return rememberTarget(level, cameraEntity, livingEntity, now);
@@ -168,6 +169,7 @@ public final class MoonHud {
             for (Entity entity : level.getEntities(cameraEntity, searchArea)) {
                if (entity instanceof LivingEntity livingEntity
                   && !(livingEntity instanceof ArmorStand)
+                  && !(livingEntity instanceof net.minecraft.world.entity.player.Player)
                   && livingEntity.isAlive()
                   && entity.isPickable()
                   && !entity.isSpectator()) {

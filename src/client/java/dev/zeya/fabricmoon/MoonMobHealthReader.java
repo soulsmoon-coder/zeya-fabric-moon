@@ -20,9 +20,17 @@ import net.minecraft.world.entity.Display.TextDisplay;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.scores.DisplaySlot;
+import net.minecraft.world.scores.Objective;
+import net.minecraft.world.scores.ReadOnlyScoreInfo;
+import net.minecraft.world.scores.Scoreboard;
+import net.minecraft.world.scores.criteria.ObjectiveCriteria.RenderType;
 import dev.zeya.fabricmoon.mixin.BossHealthOverlayAccessor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 final class MoonMobHealthReader {
+   private static final Logger LOGGER = LoggerFactory.getLogger("ZeyaFabricMoon/HealthReader");
    private static final String NUMBER = "([0-9][0-9,.]*\\s*(?:kk|mi|bi|tri|k|m|b|t)?)";
    private static final String HEART = "(?:\\x{2764}\\x{FE0F}?|\\x{2665}|❤|♥)";
    private static final String HEALTH_WORD = "(?:\\bhp\\b|\\bhealth\\b|\\bvida\\b|\\blife\\b)";
@@ -41,6 +49,9 @@ final class MoonMobHealthReader {
       Pattern.compile("(?i)" + HEART + "\\s*" + NUMBER),
       Pattern.compile("(?i)" + NUMBER + "\\s*(?:" + HEART + "|" + HEALTH_WORD + ")")
    };
+   private static final double LABEL_HORIZONTAL_RANGE = 64.0;
+   private static final double LABEL_VERTICAL_RANGE = 128.0;
+   private static final double LABEL_VERTICAL_DOWN = 8.0;
    private static final long CACHE_NANOS = 100000000L;
    private static final long FLOATING_DAMAGE_SCAN_INTERVAL_NANOS = 50000000L;
    private static final long LABEL_MEMORY_NANOS = 10000000000L;
@@ -60,6 +71,7 @@ final class MoonMobHealthReader {
    private static long cachedNameAtNanos;
    private static String cachedDisplayName;
    private static long lastFloatingDamageScanNanos;
+   private static long lastDebugLogNanos;
 
    private MoonMobHealthReader() {
    }
@@ -73,6 +85,11 @@ final class MoonMobHealthReader {
          cachedEntityId = target.getId();
          cachedAtNanos = now;
          cachedReading = findReading(target);
+         if (MoonConfig.combatHudDebugLabels && now - lastDebugLogNanos > 1000000000L) {
+            lastDebugLogNanos = now;
+            logLabelDebug(target, cachedReading);
+         }
+
          return cachedReading;
       }
    }
@@ -84,48 +101,229 @@ final class MoonMobHealthReader {
          return cachedDisplayName;
       }
 
+      // Always try label name first (server-side TextDisplay/ArmorStand)
+      String labelName = findLabelName(target, level);
+      if (labelName != null) {
+         cachedNameLevel = level;
+         cachedNameEntityId = target.getId();
+         cachedNameAtNanos = now;
+         cachedDisplayName = labelName;
+         return labelName;
+      }
+
+      // For non-player mobs, try boss bar name even if vanilla name matches
+      if (!(target instanceof Player)) {
+         String bbName = bossBarName();
+         if (bbName != null) {
+            cachedNameLevel = level;
+            cachedNameEntityId = target.getId();
+            cachedNameAtNanos = now;
+            cachedDisplayName = bbName;
+            return bbName;
+         }
+      }
+
+      // Fall back to entity display name (custom name from server)
       Component nameComponent = target instanceof Player ? target.getName() : target.getDisplayName();
       String entityName = nameComponent != null ? nameComponent.getString().trim() : "";
-      if (!isGeneratedName(entityName)) {
+      if (!entityName.isEmpty() && !isVanillaName(target, entityName)) {
          cachedNameLevel = level;
          cachedNameEntityId = target.getId();
          cachedNameAtNanos = now;
          cachedDisplayName = entityName;
-         return cachedDisplayName;
+         return entityName;
       }
 
-      AABB searchArea = target.getBoundingBox().inflate(2.0, 8.0, 2.0);
+      // Last resort: generic fallback — skip players entirely
+      String displayName = "Mob";
+      cachedNameLevel = level;
+      cachedNameEntityId = target.getId();
+      cachedNameAtNanos = now;
+      cachedDisplayName = displayName;
+      return displayName;
+   }
+
+   private static boolean isVanillaName(LivingEntity target, String name) {
+      if (name.isEmpty()) {
+         return true;
+      }
+
+      String defaultName = target.getType().getDescription().getString();
+      return name.equalsIgnoreCase(defaultName);
+   }
+
+   private static String bossBarName() {
+      Minecraft client = Minecraft.getInstance();
+      if (client.gui == null) {
+         return null;
+      }
+
+      BossHealthOverlay overlay = client.gui.hud.getBossOverlay();
+      Map<UUID, LerpingBossEvent> events = ((BossHealthOverlayAccessor)overlay).zeyafabricmoon$getEvents();
+      if (events.size() != 1) {
+         return null;
+      }
+
+      LerpingBossEvent event = events.values().iterator().next();
+      String text = event.getName() != null ? event.getName().getString() : "";
+      return bestNameFromText(text);
+   }
+
+   private static String findLabelName(LivingEntity target, ClientLevel level) {
       String labelName = null;
       double closestDistance = Double.MAX_VALUE;
 
-      for (Entity entity : level.getEntities(target, searchArea)) {
-         if ((entity instanceof TextDisplay || entity instanceof ArmorStand)
-            && !(entity.getY() < target.getY() + target.getBbHeight() - 0.25)
-            && !(entity.getY() > target.getY() + target.getBbHeight() + 6.0)) {
-            String text = textOf(entity);
+      for (Entity entity : nearbyLabels(target, level)) {
+         if (entity.getY() < target.getY() - LABEL_VERTICAL_DOWN
+            || entity.getY() > target.getY() + target.getBbHeight() + LABEL_VERTICAL_RANGE
+            || !isClosestHealthLabel(entity, target)) {
+            continue;
+         }
 
-            for (String line : text.split("\\R")) {
-               String candidate = cleanNameCandidate(line);
-               if (!candidate.isEmpty()
-                  && !candidate.equalsIgnoreCase("CLICK")
-                  && parseHealthText(candidate) == null
-                  && !(parseDamageText(candidate) > 0.0)
-                  && !candidate.matches(".*\\d.*[/_].*")) {
-                  double distance = entity.getBoundingBox().distanceToSqr(target.getBoundingBox());
-                  if (distance < closestDistance) {
-                     labelName = candidate;
-                     closestDistance = distance;
-                  }
-               }
+         String candidate = bestNameFromText(textOf(entity));
+         if (candidate != null) {
+            double distance = entity.getBoundingBox().distanceToSqr(target.getBoundingBox());
+            if (distance < closestDistance) {
+               labelName = candidate;
+               closestDistance = distance;
             }
          }
       }
 
-      cachedNameLevel = level;
-      cachedNameEntityId = target.getId();
-      cachedNameAtNanos = now;
-      cachedDisplayName = labelName != null ? labelName : (target instanceof Player ? "NPC" : "Mob");
-      return cachedDisplayName;
+      return labelName;
+   }
+
+   private static String bestNameFromText(String text) {
+      String best = null;
+      int bestScore = Integer.MIN_VALUE;
+
+      for (String line : text.split("\\R")) {
+         String candidate = nameFromLine(line);
+         if (candidate == null) {
+            continue;
+         }
+
+         int score = nameScore(candidate);
+         if (score > bestScore) {
+            best = candidate;
+            bestScore = score;
+         }
+      }
+
+      return best;
+   }
+
+   private static int nameScore(String candidate) {
+      int letters = 0;
+      int digits = 0;
+
+      for (int index = 0; index < candidate.length(); index++) {
+         char character = candidate.charAt(index);
+         if (Character.isLetter(character)) {
+            letters++;
+         } else if (Character.isDigit(character)) {
+            digits++;
+         }
+      }
+
+      return letters * 3 - digits * 2;
+   }
+
+   private static String nameFromLine(String line) {
+      String candidate = cleanNameCandidate(line);
+      String stripped = stripStats(candidate);
+      if (isNameCandidate(stripped)) {
+         return stripped;
+      }
+
+      return isNameCandidate(candidate) ? candidate : null;
+   }
+
+   private static String stripStats(String text) {
+      String result = text;
+
+      for (Pattern pattern : HEALTH_PAIRS) {
+         result = pattern.matcher(result).replaceAll(" ");
+      }
+
+      for (Pattern pattern : HEALTH_VALUES) {
+         result = pattern.matcher(result).replaceAll(" ");
+      }
+
+      result = result.replaceAll("(?i)\\b(?:hp|health|vida|life|sangue|blood)\\b\\s*[:=]?\\s*" + NUMBER, " ");
+      result = result.replaceAll("(?i)" + NUMBER + "\\s*" + HEART, " ");
+      result = result.replaceAll("(?i)" + HEART + "\\s*" + NUMBER, " ");
+      result = result.replaceAll("(?i)" + NUMBER + "\\s*(?:" + HEART + "|" + HEALTH_WORD + ")", " ");
+      result = result.replaceAll("(?i)[\\[({]\\s*(?:lv|level|nivel|nível)\\.?\\s*\\d+\\s*[\\])}]", " ");
+      result = result.replaceAll("(?i)\\b(?:lv|level|nivel|nível)\\.?\\s*\\d+\\b", " ");
+      result = result.replaceAll("(?i)^\\s*[\\[({]?\\s*(?:lv|level|nivel|nível)\\.?\\s*\\d+\\s*[\\])}]?\\s*", " ");
+      result = result.replaceAll("[\\[\\](){}<>]+", " ");
+      result = result.replaceAll("\\s+", " ").trim();
+      return result.replaceAll("^[\\s\\-:|•·]+", "").replaceAll("[\\s\\-:|•·]+$", "").trim();
+   }
+
+   private static boolean isNameCandidate(String candidate) {
+      if (candidate.isEmpty()
+         || candidate.equalsIgnoreCase("CLICK")
+         || candidate.equalsIgnoreCase("RIGHT CLICK")
+         || candidate.equalsIgnoreCase("LEFT CLICK")) {
+         return false;
+      }
+
+      if (!candidate.matches(".*\\p{L}.*")
+         || candidate.contains("❤")
+         || candidate.contains("♥")
+         || candidate.matches("(?i)^(?:hp|health|vida|life|sangue|blood|dano|damage|lvl?|level|nivel|nível)$")) {
+         return false;
+      }
+
+      if (parseHealthText(candidate) != null || parseDamageText(candidate) > 0.0 || candidate.matches(".*\\d.*[/_].*")) {
+         return false;
+      }
+
+      return !candidate.matches("(?i)^(?:lv|level|nivel|nível)[\\s.:]*\\d+.*$") || candidate.matches(".*\\p{L}{3,}.*");
+   }
+
+   private static List<Entity> nearbyLabels(LivingEntity target, ClientLevel level) {
+      List<Entity> labels = new ArrayList<>();
+      AABB searchArea = target.getBoundingBox().inflate(LABEL_HORIZONTAL_RANGE, LABEL_VERTICAL_RANGE, LABEL_HORIZONTAL_RANGE);
+
+      for (Entity entity : level.getEntities(target, searchArea)) {
+         if (isLabelEntity(entity, target)) {
+            labels.add(entity);
+         }
+      }
+
+      for (Entity passenger : target.getPassengers()) {
+         if (isLabelEntity(passenger, target) && !labels.contains(passenger)) {
+            labels.add(passenger);
+         }
+      }
+
+      return labels;
+   }
+
+   private static boolean isLabelEntity(Entity entity, LivingEntity target) {
+      return entity instanceof TextDisplay
+         || entity instanceof ArmorStand
+         || entity != target && !(entity instanceof Player) && entity.hasCustomName();
+   }
+
+   private static void logLabelDebug(LivingEntity target, MoonMobHealthReader.HealthReading reading) {
+      StringBuilder builder = new StringBuilder();
+      builder.append("Alvo=").append(displayName(target));
+      builder.append(" | vanilla=").append(target.getDisplayName().getString());
+      builder.append(" | leitura=").append(reading == null ? "null" : reading.current() + "/" + reading.maximum());
+      if (target.level() instanceof ClientLevel level) {
+         for (Entity entity : nearbyLabels(target, level)) {
+            String text = textOf(entity).trim();
+            if (!text.isEmpty()) {
+               builder.append(" | ").append(entity.getType()).append("='").append(text.replace('\n', '|')).append("'");
+            }
+         }
+      }
+
+      LOGGER.info("[CombatHUD] {}", builder);
    }
 
    static boolean hasGeneratedName(LivingEntity target) {
@@ -278,22 +476,22 @@ final class MoonMobHealthReader {
    }
 
    private static MoonMobHealthReader.HealthReading findReading(LivingEntity target) {
-      MoonMobHealthReader.HealthReading labelReading = findLabelReading(target);
-      MoonMobHealthReader.HealthReading bossBarReading = readBossBar(target, labelReading);
-      if (bossBarReading != null) {
-         if (labelReading == null || comparableMaximum(bossBarReading) >= comparableMaximum(labelReading)) {
-            return bossBarReading;
-         }
+      // Skip players entirely — only read mob/boss health
+      if (target instanceof Player) {
+         return null;
       }
 
-      if (labelReading == null && target instanceof Player player) {
-         MoonMobHealthReader.HealthReading tabReading = readTabListHealth(player);
-         if (tabReading != null) {
-            return tabReading;
-         }
+      MoonMobHealthReader.HealthReading baseReading = findLabelReading(target);
+      if (baseReading == null) {
+         baseReading = readBelowNameScore(target);
       }
 
-      return labelReading;
+      MoonMobHealthReader.HealthReading bossBarReading = readBossBar(target, baseReading);
+      if (bossBarReading != null && (baseReading == null || comparableMaximum(bossBarReading) >= comparableMaximum(baseReading))) {
+         return bossBarReading;
+      }
+
+      return baseReading;
    }
 
    private static MoonMobHealthReader.HealthReading findLabelReading(LivingEntity target) {
@@ -302,23 +500,20 @@ final class MoonMobHealthReader {
          return reading;
       }
 
-      AABB searchArea = target.getBoundingBox().inflate(2.0, 8.0, 2.0);
       ClientLevel level = (ClientLevel)target.level();
       MoonMobHealthReader.HealthReading nearestReading = null;
       double nearestDistance = Double.MAX_VALUE;
 
-      for (Entity entity : level.getEntities(target, searchArea)) {
-         if (entity instanceof TextDisplay || entity instanceof ArmorStand) {
-            double minY = target.getY() - 1.0;
-            double maxY = target.getY() + target.getBbHeight() + 6.0;
-            if (!(entity.getY() < minY) && !(entity.getY() > maxY) && isClosestHealthLabel(entity, target)) {
-               reading = parseHealthText(textOf(entity));
-               if (reading != null) {
-                  double distance = entity.getBoundingBox().distanceToSqr(target.getBoundingBox());
-                  if (distance < nearestDistance) {
-                     nearestReading = reading;
-                     nearestDistance = distance;
-                  }
+      for (Entity entity : nearbyLabels(target, level)) {
+         double minY = target.getY() - LABEL_VERTICAL_DOWN;
+         double maxY = target.getY() + target.getBbHeight() + LABEL_VERTICAL_RANGE;
+         if (!(entity.getY() < minY) && !(entity.getY() > maxY) && isClosestHealthLabel(entity, target)) {
+            reading = parseHealthText(textOf(entity));
+            if (reading != null) {
+               double distance = entity.getBoundingBox().distanceToSqr(target.getBoundingBox());
+               if (distance < nearestDistance) {
+                  nearestReading = reading;
+                  nearestDistance = distance;
                }
             }
          }
@@ -331,7 +526,7 @@ final class MoonMobHealthReader {
       return reading.maximum() != null ? reading.maximum() : reading.current();
    }
 
-   private static MoonMobHealthReader.HealthReading readBossBar(LivingEntity target, MoonMobHealthReader.HealthReading labelReading) {
+   private static MoonMobHealthReader.HealthReading readBossBar(LivingEntity target, MoonMobHealthReader.HealthReading baseReading) {
       Minecraft client = Minecraft.getInstance();
       if (client.player == null || client.gui == null) {
          return null;
@@ -351,8 +546,8 @@ final class MoonMobHealthReader {
          boolean matches = bossBarMatches(targetName, normalizeBossName(barText));
          MoonMobHealthReader.HealthReading reading = parseHealthText(barText);
          if (reading == null) {
-            if (matches && labelReading != null && labelReading.maximum() == null) {
-               return applyBossBarProgress(labelReading, event.getProgress());
+            if (matches && baseReading != null && baseReading.maximum() == null) {
+               return applyBossBarProgress(baseReading, event.getProgress());
             }
 
             continue;
@@ -415,7 +610,45 @@ final class MoonMobHealthReader {
       return tabName != null ? parseHealthText(tabName.getString()) : null;
    }
 
+   private static MoonMobHealthReader.HealthReading readBelowNameScore(LivingEntity target) {
+      if (!(target.level() instanceof ClientLevel level)) {
+         return null;
+      }
+
+      Scoreboard scoreboard = level.getScoreboard();
+      Objective objective = scoreboard.getDisplayObjective(DisplaySlot.BELOW_NAME);
+      if (objective == null) {
+         return null;
+      }
+
+      ReadOnlyScoreInfo scoreInfo = scoreboard.getPlayerScoreInfo(target, objective);
+      if (scoreInfo == null) {
+         return null;
+      }
+
+      int value = scoreInfo.value();
+      if (value <= 0) {
+         return null;
+      }
+
+      String objectiveName = objective.getDisplayName().getString();
+      boolean healthObjective = objective.getRenderType() == RenderType.HEARTS
+         || objectiveName.matches("(?i).*(hp|health|vida|life|sangue|blood|❤|♥).*");
+      if (!healthObjective) {
+         return null;
+      }
+
+      Double maximum = target instanceof Player && value <= target.getMaxHealth() ? (double)target.getMaxHealth() : null;
+      return new MoonMobHealthReader.HealthReading(value, maximum);
+   }
+
    private static boolean isClosestHealthLabel(Entity label, LivingEntity target) {
+      double dx = label.getX() - target.getX();
+      double dz = label.getZ() - target.getZ();
+      if (dx * dx + dz * dz <= 9.0) {
+         return true;
+      }
+
       double targetDistance = label.getBoundingBox().distanceToSqr(target.getBoundingBox());
       AABB searchArea = label.getBoundingBox().inflate(2.0, 4.0, 2.0);
 
@@ -436,7 +669,7 @@ final class MoonMobHealthReader {
          Component text = textDisplay.getText();
          return text != null ? text.getString() : "";
       } else {
-         return (entity instanceof LivingEntity || entity instanceof ArmorStand) && entity.hasCustomName() ? entity.getCustomName().getString() : "";
+         return entity.hasCustomName() ? entity.getCustomName().getString() : "";
       }
    }
 
