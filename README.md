@@ -105,31 +105,3 @@ Todos os comandos de alternância aceitam `on`, `off` e `toggle`:
 
 Mod Menu é opcional: com ele instalado, as configurações também aparecem no
 botão de configuração do ZeyaMoon na lista de mods.
-
-## Instalação
-
-1. Pegue o jar mais recente em [`dist/`](dist/) (ou compile você mesmo, veja
-   abaixo).
-2. Coloque o `.jar` na pasta `mods/` do seu Minecraft.
-3. Inicie o jogo com o perfil Fabric 26.2 e digite `/zeyafabric` no chat.
-
-## Compilar
-
-No Windows:
-
-```powershell
-gradlew.bat build
-```
-
-O JAR é gerado em `build/libs/`. Para atualizar a cópia versionada em `dist/`,
-copie o jar novo para lá antes de commitar.
-
-O ícone do mod fica em `src/main/resources/assets/zeyafabricmoon/icon.png`. Esse
-arquivo é usado pelo Minecraft na lista de mods e pode ser enviado como imagem
-do projeto no Modrinth.
-
-## Aviso
-
-Recursos de automação (auto-click, pesca automática, macros) podem violar as
-regras de servidores multiplayer. **Verifique as regras do servidor antes de
-usar.**
