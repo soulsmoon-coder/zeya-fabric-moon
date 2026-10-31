@@ -11,7 +11,7 @@ e atributos continuam exatamente os do vanilla.
 
 | | |
 |---|---|
-| **Versão** | 1.1.15 |
+| **Versão** | 1.0.0 |
 | **Ambiente** | client-only |
 | **Minecraft** | 26.2 |
 | **Licença** | MIT |
