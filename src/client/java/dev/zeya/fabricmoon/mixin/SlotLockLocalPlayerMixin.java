@@ -1,6 +1,6 @@
 package dev.zeya.fabricmoon.mixin;
 
-import dev.zeya.fabricmoon.MoonSlotManager;
+import dev.zeya.fabricmoon.macros.MoonSlotManager;
 import net.minecraft.client.player.LocalPlayer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;

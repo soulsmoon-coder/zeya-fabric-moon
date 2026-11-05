@@ -28,22 +28,18 @@ public final class MoonConfig {
    public static boolean hideHead = false;
    public static boolean fullbright = false;
    public static boolean leftAutoClick = false;
-   public static boolean rightAutoClick = false;
    public static int leftCps = 10;
-   public static int rightCps = 10;
-   public static int macroExtraDelayMillis = 0;
    public static String authorizedMacroServers = "";
    public static boolean autoFishing = false;
-   public static boolean bonemerangLoadoutSwap = false;
-   public static int bonemerangLoadoutSlot = 1;
-   public static boolean deathBowLoadoutSwap = false;
-   public static int deathBowLoadoutSlot = 1;
+   public static boolean autoGoldenFish = false;
+   public static int goldenFishActionDelayTicks = 0;
    public static boolean blazeDaggerAutoSwitch = false;
    public static int blazeDaggerSlot = 1;
    public static int blazeDaggerModeDelayTicks = 10;
+   public static int blazeDaggerSwapDelayMs = 100;
    public static int fishingCastDelayTicks = 20;
-   public static int fishingReelDelaySeconds = 0;
-   public static int minFishWaitTicks = 0;
+   public static int fishingReelDelayTicks = 0;
+   public static int minFishWaitSeconds = 0;
    public static boolean disableFishingWhileOnScreen = true;
    public static boolean oxygenRecovery = false;
    public static int oxygenThreshold = 10;
@@ -51,13 +47,18 @@ public final class MoonConfig {
    public static float mobSize = 1.0F;
    public static boolean shrinkLargeMobs = false;
    public static final Set<String> mobPlayerSizeTargets = new LinkedHashSet<>();
-   public static boolean thirdPersonLookFromBelow = false;
    public static boolean playerGlow = false;
-   public static int playerGlowColor = 7525832;
+   public static int modColor = 5636095;
+   public static int hudTextColor = 0xFFFFFFFF;
+   public static int hudAccentColor = 0xFF55AA55;
+   public static int hudBackgroundColor = 0xA0000000;
+   public static boolean hudBackgroundEnabled = true;
    public static boolean entityHitboxes = false;
    public static boolean combatHud = false;
-   public static boolean combatHudShowDamage = true;
+   public static boolean combatHudShowDps = true;
    public static boolean combatHudShowTargetHealth = false;
+   public static boolean combatHudChatDamage = false;
+   public static int combatHudRange = 15;
    public static boolean combatHudDebugLabels = false;
    public static boolean networkOptimizer = true;
    public static boolean hypixelAutoRoute = true;
@@ -98,22 +99,19 @@ public final class MoonConfig {
             hideHead = Boolean.parseBoolean(properties.getProperty("hideHead", "false"));
             fullbright = Boolean.parseBoolean(properties.getProperty("fullbright", "false"));
             leftAutoClick = Boolean.parseBoolean(properties.getProperty("leftAutoClick", "false"));
-            rightAutoClick = Boolean.parseBoolean(properties.getProperty("rightAutoClick", "false"));
             leftCps = clampCps(parseInteger(properties, "leftCps", 10));
-            rightCps = clampCps(parseInteger(properties, "rightCps", 10));
-            macroExtraDelayMillis = clampMacroDelay(parseInteger(properties, "macroExtraDelayMillis", 0));
             authorizedMacroServers = properties.getProperty("authorizedMacroServers", "").trim();
             autoFishing = Boolean.parseBoolean(properties.getProperty("autoFishing", "false"));
-            bonemerangLoadoutSwap = Boolean.parseBoolean(properties.getProperty("bonemerangLoadoutSwap", "false"));
-            bonemerangLoadoutSlot = clampLoadoutSlot(parseInteger(properties, "bonemerangLoadoutSlot", 1));
-            deathBowLoadoutSwap = Boolean.parseBoolean(properties.getProperty("deathBowLoadoutSwap", "false"));
-            deathBowLoadoutSlot = clampLoadoutSlot(parseInteger(properties, "deathBowLoadoutSlot", 1));
+            autoGoldenFish = Boolean.parseBoolean(properties.getProperty("autoGoldenFish", "false"));
+            goldenFishActionDelayTicks = clampDelay(parseInteger(properties, "goldenFishActionDelayTicks", 0));
             blazeDaggerAutoSwitch = Boolean.parseBoolean(properties.getProperty("blazeDaggerAutoSwitch", "false"));
             blazeDaggerSlot = clampLoadoutSlot(parseInteger(properties, "blazeDaggerSlot", 1));
             blazeDaggerModeDelayTicks = clampDelay(parseInteger(properties, "blazeDaggerModeDelayTicks", 10));
+            int legacyDaggerDelay = clampDelay(parseInteger(properties, "blazeDaggerModeDelayTicks", 10)) * 50;
+            blazeDaggerSwapDelayMs = clampSwapDelay(parseInteger(properties, "blazeDaggerSwapDelayMs", legacyDaggerDelay));
             fishingCastDelayTicks = clampDelay(parseInteger(properties, "fishingCastDelayTicks", 20));
-            fishingReelDelaySeconds = clampSeconds(parseInteger(properties, "fishingReelDelaySeconds", parseInteger(properties, "fishingReelDelayTicks", 0)));
-            minFishWaitTicks = clampDelay(parseInteger(properties, "minFishWaitTicks", 0));
+            fishingReelDelayTicks = clampDelay(parseInteger(properties, "fishingReelDelayTicks", parseInteger(properties, "minFishWaitTicks", 0)));
+            minFishWaitSeconds = clampSeconds(parseInteger(properties, "minFishWaitSeconds", parseInteger(properties, "fishingReelDelaySeconds", 0)));
             disableFishingWhileOnScreen = Boolean.parseBoolean(properties.getProperty("disableFishingWhileOnScreen", "true"));
             oxygenRecovery = Boolean.parseBoolean(properties.getProperty("oxygenRecovery", "false"));
             oxygenThreshold = clampOxygen(parseInteger(properties, "oxygenThreshold", 10));
@@ -143,12 +141,17 @@ public final class MoonConfig {
                }
             }
 
-            thirdPersonLookFromBelow = Boolean.parseBoolean(properties.getProperty("thirdPersonLookFromBelow", "false"));
             playerGlow = Boolean.parseBoolean(properties.getProperty("playerGlow", "false"));
+            hudTextColor = parseArgb(properties, "hudTextColor", 0xFFFFFFFF);
+            hudAccentColor = parseArgb(properties, "hudAccentColor", 0xFF55AA55);
+            hudBackgroundColor = parseArgb(properties, "hudBackgroundColor", 0xA0000000);
+            hudBackgroundEnabled = Boolean.parseBoolean(properties.getProperty("hudBackgroundEnabled", "true"));
             entityHitboxes = Boolean.parseBoolean(properties.getProperty("entityHitboxes", "false"));
             combatHud = Boolean.parseBoolean(properties.getProperty("combatHud", "false"));
-            combatHudShowDamage = Boolean.parseBoolean(properties.getProperty("combatHudShowDamage", "true"));
+            combatHudShowDps = Boolean.parseBoolean(properties.getProperty("combatHudShowDps", properties.getProperty("combatHudShowDamage", "true")));
             combatHudShowTargetHealth = Boolean.parseBoolean(properties.getProperty("combatHudShowTargetHealth", "false"));
+            combatHudChatDamage = Boolean.parseBoolean(properties.getProperty("combatHudChatDamage", "false"));
+            combatHudRange = clampCombatHudRange(parseInteger(properties, "combatHudRange", 15));
             combatHudDebugLabels = Boolean.parseBoolean(properties.getProperty("combatHudDebugLabels", "false"));
             networkOptimizer = Boolean.parseBoolean(properties.getProperty("networkOptimizer", "true"));
             hypixelAutoRoute = Boolean.parseBoolean(properties.getProperty("hypixelAutoRoute", "true"));
@@ -273,17 +276,9 @@ public final class MoonConfig {
                }
             }
 
-            try {
-               String color = properties.getProperty("playerGlowColor", "72D5C8").trim();
-               if (color.startsWith("#")) {
-                  color = color.substring(1);
-               }
-
-               playerGlowColor = clampColor(Integer.parseInt(color, 16));
-            } catch (NumberFormatException exception) {
-               LOGGER.warn("Invalid playerGlowColor in {}; using 72D5C8", FILE, exception);
-               playerGlowColor = 7525832;
-            }
+            modColor = properties.containsKey("modColor")
+               ? parseColor(properties, "modColor", 5636095)
+               : parseColor(properties, "statsHudColor", 5636095);
          } catch (IOException exception) {
             LOGGER.error("Could not read configuration from {}", FILE, exception);
          }
@@ -298,22 +293,18 @@ public final class MoonConfig {
       properties.setProperty("hideHead", Boolean.toString(hideHead));
       properties.setProperty("fullbright", Boolean.toString(fullbright));
       properties.setProperty("leftAutoClick", Boolean.toString(leftAutoClick));
-      properties.setProperty("rightAutoClick", Boolean.toString(rightAutoClick));
       properties.setProperty("leftCps", Integer.toString(leftCps));
-      properties.setProperty("rightCps", Integer.toString(rightCps));
-      properties.setProperty("macroExtraDelayMillis", Integer.toString(macroExtraDelayMillis));
       properties.setProperty("authorizedMacroServers", authorizedMacroServers);
       properties.setProperty("autoFishing", Boolean.toString(autoFishing));
-      properties.setProperty("bonemerangLoadoutSwap", Boolean.toString(bonemerangLoadoutSwap));
-      properties.setProperty("bonemerangLoadoutSlot", Integer.toString(bonemerangLoadoutSlot));
-      properties.setProperty("deathBowLoadoutSwap", Boolean.toString(deathBowLoadoutSwap));
-      properties.setProperty("deathBowLoadoutSlot", Integer.toString(deathBowLoadoutSlot));
+      properties.setProperty("autoGoldenFish", Boolean.toString(autoGoldenFish));
+      properties.setProperty("goldenFishActionDelayTicks", Integer.toString(goldenFishActionDelayTicks));
       properties.setProperty("blazeDaggerAutoSwitch", Boolean.toString(blazeDaggerAutoSwitch));
       properties.setProperty("blazeDaggerSlot", Integer.toString(blazeDaggerSlot));
       properties.setProperty("blazeDaggerModeDelayTicks", Integer.toString(blazeDaggerModeDelayTicks));
+      properties.setProperty("blazeDaggerSwapDelayMs", Integer.toString(blazeDaggerSwapDelayMs));
       properties.setProperty("fishingCastDelayTicks", Integer.toString(fishingCastDelayTicks));
-      properties.setProperty("fishingReelDelaySeconds", Integer.toString(fishingReelDelaySeconds));
-      properties.setProperty("minFishWaitTicks", Integer.toString(minFishWaitTicks));
+      properties.setProperty("fishingReelDelayTicks", Integer.toString(fishingReelDelayTicks));
+      properties.setProperty("minFishWaitSeconds", Integer.toString(minFishWaitSeconds));
       properties.setProperty("disableFishingWhileOnScreen", Boolean.toString(disableFishingWhileOnScreen));
       properties.setProperty("oxygenRecovery", Boolean.toString(oxygenRecovery));
       properties.setProperty("oxygenThreshold", Integer.toString(oxygenThreshold));
@@ -321,13 +312,18 @@ public final class MoonConfig {
       properties.setProperty("shrinkLargeMobs", Boolean.toString(shrinkLargeMobs));
       properties.setProperty("mobSize", Float.toString(mobSize));
       properties.setProperty("mobPlayerSizeTargets", String.join(",", mobPlayerSizeTargets));
-      properties.setProperty("thirdPersonLookFromBelow", Boolean.toString(thirdPersonLookFromBelow));
       properties.setProperty("playerGlow", Boolean.toString(playerGlow));
-      properties.setProperty("playerGlowColor", String.format(Locale.ROOT, "%06X", clampColor(playerGlowColor)));
+      properties.setProperty("modColor", String.format(Locale.ROOT, "%06X", clampColor(modColor)));
+      properties.setProperty("hudTextColor", String.format(Locale.ROOT, "%08X", hudTextColor));
+      properties.setProperty("hudAccentColor", String.format(Locale.ROOT, "%08X", hudAccentColor));
+      properties.setProperty("hudBackgroundColor", String.format(Locale.ROOT, "%08X", hudBackgroundColor));
+      properties.setProperty("hudBackgroundEnabled", Boolean.toString(hudBackgroundEnabled));
       properties.setProperty("entityHitboxes", Boolean.toString(entityHitboxes));
       properties.setProperty("combatHud", Boolean.toString(combatHud));
-      properties.setProperty("combatHudShowDamage", Boolean.toString(combatHudShowDamage));
+      properties.setProperty("combatHudShowDps", Boolean.toString(combatHudShowDps));
       properties.setProperty("combatHudShowTargetHealth", Boolean.toString(combatHudShowTargetHealth));
+      properties.setProperty("combatHudChatDamage", Boolean.toString(combatHudChatDamage));
+      properties.setProperty("combatHudRange", Integer.toString(combatHudRange));
       properties.setProperty("combatHudDebugLabels", Boolean.toString(combatHudDebugLabels));
       properties.setProperty("networkOptimizer", Boolean.toString(networkOptimizer));
       properties.setProperty("hypixelAutoRoute", Boolean.toString(hypixelAutoRoute));
@@ -424,12 +420,12 @@ public final class MoonConfig {
       return Math.max(1, Math.min(15, cps));
    }
 
-   public static int clampMacroDelay(int millis) {
-      return Math.max(0, Math.min(2000, millis));
-   }
-
    public static int clampDelay(int ticks) {
       return Math.max(0, Math.min(200, ticks));
+   }
+
+   public static int clampSwapDelay(int milliseconds) {
+      return Math.max(0, Math.min(300, milliseconds));
    }
 
    public static int clampSeconds(int seconds) {
@@ -446,6 +442,53 @@ public final class MoonConfig {
 
    public static int clampColor(int color) {
       return Math.max(0, Math.min(16777215, color));
+   }
+
+   public static int clampCombatHudRange(int range) {
+      return Math.max(1, Math.min(32, range));
+   }
+
+   public static void setGlobalColor(int color) {
+      int rgb = clampColor(color);
+      modColor = rgb;
+      hudTextColor = 0xFF000000 | rgb;
+      hudAccentColor = 0xFF000000 | rgb;
+   }
+
+   public static int modColorArgb() {
+      return 0xFF000000 | clampColor(modColor);
+   }
+
+   private static int parseColor(Properties properties, String key, int defaultColor) {
+      String color = properties.getProperty(key, String.format(Locale.ROOT, "%06X", defaultColor)).trim();
+      if (color.startsWith("#")) {
+         color = color.substring(1);
+      }
+
+      try {
+         return clampColor(Integer.parseInt(color, 16));
+      } catch (NumberFormatException exception) {
+         LOGGER.warn("Invalid {} in {}; using #{}", key, FILE, String.format(Locale.ROOT, "%06X", defaultColor), exception);
+         return defaultColor;
+      }
+   }
+
+   private static int parseArgb(Properties properties, String key, int defaultColor) {
+      String color = properties.getProperty(key, String.format(Locale.ROOT, "%08X", defaultColor)).trim();
+      if (color.startsWith("#")) {
+         color = color.substring(1);
+      }
+
+      try {
+         if (color.length() != 8) {
+            throw new NumberFormatException("Expected 8 hexadecimal digits");
+         }
+
+         return (int)Long.parseLong(color, 16);
+      } catch (NumberFormatException exception) {
+         LOGGER.warn("Invalid {} in {}; using #{}", key, FILE, String.format(Locale.ROOT, "%08X", defaultColor), exception);
+         return defaultColor;
+      }
    }
 
    public static int clampHudPosition(int position) {

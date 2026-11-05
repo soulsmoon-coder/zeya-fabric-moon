@@ -1,7 +1,7 @@
 package dev.zeya.fabricmoon.mixin;
 
 import dev.zeya.fabricmoon.MoonConfig;
-import dev.zeya.fabricmoon.MoonNetworkOptimizer;
+import dev.zeya.fabricmoon.network.MoonNetworkOptimizer;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;

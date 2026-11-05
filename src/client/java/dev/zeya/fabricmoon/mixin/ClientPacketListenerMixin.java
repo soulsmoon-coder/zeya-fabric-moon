@@ -1,6 +1,6 @@
 package dev.zeya.fabricmoon.mixin;
 
-import dev.zeya.fabricmoon.MoonBlazeDaggerMacro;
+import dev.zeya.fabricmoon.macros.MoonBlazeDaggerMacro;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
 import org.spongepowered.asm.mixin.Mixin;

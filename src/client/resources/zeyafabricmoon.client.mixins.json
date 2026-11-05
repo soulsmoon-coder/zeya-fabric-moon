@@ -6,7 +6,6 @@
     "AvatarRendererMixin",
     "BossHealthOverlayAccessor",
     "HumanoidArmorLayerMixin",
-    "CameraMixin",
     "MinecraftCameraMixin",
     "MouseHandlerMixin",
     "FullbrightMixin",

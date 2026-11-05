@@ -1,6 +1,6 @@
 package dev.zeya.fabricmoon.mixin;
 
-import dev.zeya.fabricmoon.MoonCombatTracker;
+import dev.zeya.fabricmoon.hud.MoonCombatTracker;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.network.protocol.game.ClientboundDamageEventPacket;
 import org.spongepowered.asm.mixin.Mixin;

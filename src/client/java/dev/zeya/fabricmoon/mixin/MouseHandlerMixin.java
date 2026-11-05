@@ -1,7 +1,8 @@
 package dev.zeya.fabricmoon.mixin;
 
+import dev.zeya.fabricmoon.hud.MoonMouseTracker;
 import dev.zeya.fabricmoon.MoonConfig;
-import dev.zeya.fabricmoon.MoonMouseTracker;
+import dev.zeya.fabricmoon.macros.MoonAutoFishing;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.MouseHandler;
 import net.minecraft.client.input.MouseButtonInfo;
@@ -19,6 +20,7 @@ public abstract class MouseHandlerMixin {
             MoonMouseTracker.recordLeftClick();
          } else if (buttonInfo.button() == 1) {
             MoonMouseTracker.recordRightClick();
+            MoonAutoFishing.onManualRodClick();
          }
       }
    }

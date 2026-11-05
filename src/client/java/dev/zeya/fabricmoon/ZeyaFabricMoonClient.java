@@ -1,7 +1,22 @@
 package dev.zeya.fabricmoon;
 
+import dev.zeya.fabricmoon.hud.MoonCombatTracker;
+import dev.zeya.fabricmoon.hud.MoonHud;
+import dev.zeya.fabricmoon.hud.MoonHudPositionScreen;
+import dev.zeya.fabricmoon.hud.MoonPingTracker;
+import dev.zeya.fabricmoon.hud.MoonServerStats;
+import dev.zeya.fabricmoon.macros.MoonAutoClicker;
+import dev.zeya.fabricmoon.macros.MoonAutoFishing;
+import dev.zeya.fabricmoon.macros.MoonBlazeDaggerMacro;
+import dev.zeya.fabricmoon.macros.MoonKeyCommands;
+import dev.zeya.fabricmoon.macros.MoonOxygenRecovery;
+import dev.zeya.fabricmoon.macros.MoonSlotManager;
+import dev.zeya.fabricmoon.macros.MoonWardrobeManager;
+import dev.zeya.fabricmoon.macros.MoonWardrobeQuickSwap;
+import dev.zeya.fabricmoon.network.MoonHypixelRouter;
+import dev.zeya.fabricmoon.network.MoonNetworkOptimizer;
+import dev.zeya.fabricmoon.visual.MoonHitboxRenderer;
 import com.mojang.brigadier.arguments.FloatArgumentType;
-import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import java.net.InetSocketAddress;
 import java.util.Locale;
 import net.fabricmc.api.ClientModInitializer;
@@ -15,12 +30,12 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientEntityEvents.Load
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents.ClientStopping;
 import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents;
 import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents.AllowCommand;
+import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.Disconnect;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.Join;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
-import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -32,14 +47,9 @@ public final class ZeyaFabricMoonClient implements ClientModInitializer {
       MoonSlotManager.refreshKeyMappings();
       AttackEntityCallback.EVENT.register((AttackEntityCallback)(player, level, hand, entity, hitResult) -> {
          if (player == Minecraft.getInstance().player) {
-            MoonCombatTracker.onPlayerAttack(entity);
             MoonBlazeDaggerMacro.onMobHit(player, entity);
          }
 
-         return InteractionResult.PASS;
-      });
-      UseItemCallback.EVENT.register((UseItemCallback)(player, level, hand) -> {
-         MoonLoadoutSwapMacro.onMainHandItemUsed(player, hand, player.getItemInHand(hand).copy());
          return InteractionResult.PASS;
       });
       ClientTickEvents.START_CLIENT_TICK.register(MoonAutoClicker::tick);
@@ -49,9 +59,9 @@ public final class ZeyaFabricMoonClient implements ClientModInitializer {
       ClientTickEvents.START_CLIENT_TICK.register(MoonWardrobeManager::checkMenuState);
       ClientTickEvents.START_CLIENT_TICK.register(MoonWardrobeQuickSwap::tick);
       ClientTickEvents.END_CLIENT_TICK.register(MoonAutoFishing::tick);
+      ClientReceiveMessageEvents.GAME.register((message, overlay) -> MoonAutoFishing.onChatMessage(message.getString()));
       ClientTickEvents.END_CLIENT_TICK.register(MoonOxygenRecovery::tick);
       ClientTickEvents.END_CLIENT_TICK.register(MoonCombatTracker::tick);
-      ClientTickEvents.END_CLIENT_TICK.register(MoonLoadoutSwapMacro::tick);
       MoonKeyCommands.refreshKeyMappings();
       ClientLifecycleEvents.CLIENT_STOPPING.register((ClientStopping)client -> {
          MoonPingTracker.reset();
@@ -70,11 +80,7 @@ public final class ZeyaFabricMoonClient implements ClientModInitializer {
                MoonHypixelRouter.testAndSelectBest().thenAccept(best -> {
                   if (best != null) {
                      String msg = "[Moon] Best Hypixel route: " + best + " (" + MoonHypixelRouter.getBestPing() + " ms)";
-                     client.execute(() -> {
-                        if (client.gui.chatListener() != null) {
-                           client.gui.chatListener().handleSystemMessage(Component.literal(msg), false);
-                        }
-                     });
+                     client.execute(() -> MoonChatFeedback.send(client, msg));
                   }
                });
             }
@@ -83,92 +89,31 @@ public final class ZeyaFabricMoonClient implements ClientModInitializer {
       MoonHitboxRenderer.register();
       ClientEntityEvents.ENTITY_LOAD.register((Load)(entity, level) -> MoonAutoFishing.onEntityLoad(entity));
       HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("zeyafabricmoon", "stats"), MoonHud::render);
-      ClientCommandRegistrationCallback.EVENT
-         .register(
-            (ClientCommandRegistrationCallback)(dispatcher, registryAccess) -> dispatcher.register(
-               (LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)ClientCommands.literal(
-                                       "zeyafabric"
-                                    )
-                                    .executes(context -> openSettings(((FabricClientCommandSource)context.getSource()).getClient())))
-                                 .then(
-                                    ((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)ClientCommands.literal("fishing")
-                                                .executes(context -> toggleAutoFishing(((FabricClientCommandSource)context.getSource()).getClient())))
-                                             .then(
-                                                ClientCommands.literal("on")
-                                                   .executes(context -> setAutoFishing(((FabricClientCommandSource)context.getSource()).getClient(), true))
-                                             ))
-                                          .then(
-                                             ClientCommands.literal("off")
-                                                .executes(context -> setAutoFishing(((FabricClientCommandSource)context.getSource()).getClient(), false))
-                                          ))
-                                       .then(
-                                          ClientCommands.literal("toggle")
-                                             .executes(context -> toggleAutoFishing(((FabricClientCommandSource)context.getSource()).getClient()))
-                                       )
-                                 ))
-                              .then(
-                                 ((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)ClientCommands.literal("rightclick")
-                                             .executes(context -> toggleRightAutoClick(((FabricClientCommandSource)context.getSource()).getClient())))
-                                          .then(
-                                             ClientCommands.literal("on")
-                                                .executes(context -> setRightAutoClick(((FabricClientCommandSource)context.getSource()).getClient(), true))
-                                          ))
-                                       .then(
-                                          ClientCommands.literal("off")
-                                             .executes(context -> setRightAutoClick(((FabricClientCommandSource)context.getSource()).getClient(), false))
-                                       ))
-                                    .then(
-                                       ClientCommands.literal("toggle")
-                                          .executes(context -> toggleRightAutoClick(((FabricClientCommandSource)context.getSource()).getClient()))
-                                    )
-                              ))
-                           .then(
-                              ((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)ClientCommands.literal("place")
-                                          .executes(context -> toggleRightAutoClick(((FabricClientCommandSource)context.getSource()).getClient())))
-                                       .then(
-                                          ClientCommands.literal("on")
-                                             .executes(context -> setRightAutoClick(((FabricClientCommandSource)context.getSource()).getClient(), true))
-                                       ))
-                                    .then(
-                                       ClientCommands.literal("off")
-                                          .executes(context -> setRightAutoClick(((FabricClientCommandSource)context.getSource()).getClient(), false))
-                                    ))
-                                 .then(
-                                    ClientCommands.literal("toggle")
-                                       .executes(context -> toggleRightAutoClick(((FabricClientCommandSource)context.getSource()).getClient()))
-                                 )
-                           ))
-                        .then(
-                           ((LiteralArgumentBuilder)((LiteralArgumentBuilder)ClientCommands.literal("size")
-                                    .executes(context -> showPlayerSize(((FabricClientCommandSource)context.getSource()).getClient())))
-                                 .then(
-                                    ClientCommands.argument("value", FloatArgumentType.floatArg(0.1F, 1.5F))
-                                       .executes(
-                                          context -> setPlayerSize(
-                                             ((FabricClientCommandSource)context.getSource()).getClient(), FloatArgumentType.getFloat(context, "value")
-                                          )
-                                       )
-                                 ))
-                              .then(
-                                 ClientCommands.literal("reset")
-                                    .executes(context -> setPlayerSize(((FabricClientCommandSource)context.getSource()).getClient(), 1.0F))
-                              )
-                        ))
-                     .then(ClientCommands.literal("hud").executes(context -> openHudEditor(((FabricClientCommandSource)context.getSource()).getClient()))))
-                  .then(
-                     ((LiteralArgumentBuilder)((LiteralArgumentBuilder)ClientCommands.literal("network")
-                              .executes(context -> showNetworkStatus(((FabricClientCommandSource)context.getSource()).getClient())))
-                           .then(
-                              ClientCommands.literal("test")
-                                 .executes(context -> testHypixelServers(((FabricClientCommandSource)context.getSource()).getClient()))
-                           ))
-                        .then(
-                           ClientCommands.literal("status")
-                              .executes(context -> showNetworkStatus(((FabricClientCommandSource)context.getSource()).getClient()))
-                        )
-                  )
-            )
-         );
+      ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
+         var root = ClientCommands.literal("zeyafabric")
+            .executes(context -> openSettings(context.getSource().getClient()));
+         var fishing = ClientCommands.literal("fishing")
+            .executes(context -> toggleAutoFishing(context.getSource().getClient()));
+         fishing.then(ClientCommands.literal("on").executes(context -> setAutoFishing(context.getSource().getClient(), true)));
+         fishing.then(ClientCommands.literal("off").executes(context -> setAutoFishing(context.getSource().getClient(), false)));
+         fishing.then(ClientCommands.literal("toggle").executes(context -> toggleAutoFishing(context.getSource().getClient())));
+         root.then(fishing);
+
+         var size = ClientCommands.literal("size")
+            .executes(context -> showPlayerSize(context.getSource().getClient()));
+         size.then(ClientCommands.argument("value", FloatArgumentType.floatArg(0.1F, 1.5F))
+            .executes(context -> setPlayerSize(context.getSource().getClient(), FloatArgumentType.getFloat(context, "value"))));
+         size.then(ClientCommands.literal("reset").executes(context -> setPlayerSize(context.getSource().getClient(), 1.0F)));
+         root.then(size);
+         root.then(ClientCommands.literal("hud").executes(context -> openHudEditor(context.getSource().getClient())));
+
+         var network = ClientCommands.literal("network")
+            .executes(context -> showNetworkStatus(context.getSource().getClient()));
+         network.then(ClientCommands.literal("test").executes(context -> testHypixelServers(context.getSource().getClient())));
+         network.then(ClientCommands.literal("status").executes(context -> showNetworkStatus(context.getSource().getClient())));
+         root.then(network);
+         dispatcher.register(root);
+      });
       ClientSendMessageEvents.ALLOW_COMMAND.register((AllowCommand)command -> !handleLocalCommand(command));
    }
 
@@ -203,56 +148,37 @@ public final class ZeyaFabricMoonClient implements ClientModInitializer {
             }
 
             return true;
-         } else {
-            if (!arguments[1].equalsIgnoreCase("fishing")
-               && !arguments[1].equalsIgnoreCase("rightclick")
-               && !arguments[1].equalsIgnoreCase("place")
-               && !arguments[1].equalsIgnoreCase("block")) {
-               sendCommandFeedback(client, "Uso: /zeyafabric [fishing|rightclick|place|block|size|hud] [on|off|toggle|valor]");
-               client.gui.setScreen(null);
-               return true;
-            }
+         }
 
-            if (arguments.length > 3) {
-               sendCommandFeedback(client, "Uso: /zeyafabric " + arguments[1].toLowerCase(Locale.ROOT) + " [on|off|toggle]");
-               client.gui.setScreen(null);
-               return true;
-            }
-
-            String action = arguments.length == 2 ? "toggle" : arguments[2].toLowerCase(Locale.ROOT);
-            if (arguments[1].equalsIgnoreCase("fishing")) {
-               switch (action) {
-                  case "on":
-                     setAutoFishing(client, true);
-                     break;
-                  case "off":
-                     setAutoFishing(client, false);
-                     break;
-                  case "toggle":
-                     toggleAutoFishing(client);
-                     break;
-                  default:
-                     sendCommandFeedback(client, "Use on, off ou toggle: /zeyafabric fishing [on|off|toggle]");
-               }
-            } else {
-               switch (action) {
-                  case "on":
-                     setRightAutoClick(client, true);
-                     break;
-                  case "off":
-                     setRightAutoClick(client, false);
-                     break;
-                  case "toggle":
-                     toggleRightAutoClick(client);
-                     break;
-                  default:
-                     sendCommandFeedback(client, "Use on, off ou toggle: /zeyafabric rightclick [on|off|toggle]");
-               }
-            }
-
+         if (!arguments[1].equalsIgnoreCase("fishing")) {
+            sendCommandFeedback(client, "Uso: /zeyafabric [fishing|size|hud|network]");
             client.gui.setScreen(null);
             return true;
          }
+
+         if (arguments.length > 3) {
+            sendCommandFeedback(client, "Uso: /zeyafabric fishing [on|off|toggle]");
+            client.gui.setScreen(null);
+            return true;
+         }
+
+         String action = arguments.length == 2 ? "toggle" : arguments[2].toLowerCase(Locale.ROOT);
+         switch (action) {
+            case "on":
+               setAutoFishing(client, true);
+               break;
+            case "off":
+               setAutoFishing(client, false);
+               break;
+            case "toggle":
+               toggleAutoFishing(client);
+               break;
+            default:
+               sendCommandFeedback(client, "Use on, off ou toggle: /zeyafabric fishing [on|off|toggle]");
+         }
+
+         client.gui.setScreen(null);
+         return true;
       } else {
          if (arguments.length == 2) {
             showPlayerSize(client);
@@ -288,10 +214,6 @@ public final class ZeyaFabricMoonClient implements ClientModInitializer {
       return 1;
    }
 
-   private static int toggleRightAutoClick(Minecraft client) {
-      return setRightAutoClick(client, !MoonConfig.rightAutoClick);
-   }
-
    private static int toggleAutoFishing(Minecraft client) {
       return setAutoFishing(client, !MoonConfig.autoFishing);
    }
@@ -300,13 +222,6 @@ public final class ZeyaFabricMoonClient implements ClientModInitializer {
       MoonConfig.autoFishing = enabled;
       MoonConfig.save();
       sendCommandFeedback(client, "Pesca automatica: " + (enabled ? "ON" : "OFF"));
-      return 1;
-   }
-
-   private static int setRightAutoClick(Minecraft client, boolean enabled) {
-      MoonConfig.rightAutoClick = enabled;
-      MoonConfig.save();
-      sendCommandFeedback(client, "Auto-click para colocar blocos: " + (enabled ? "ON" : "OFF"));
       return 1;
    }
 
@@ -327,10 +242,10 @@ public final class ZeyaFabricMoonClient implements ClientModInitializer {
       }
    }
 
-   private static int showNetworkStatus(Minecraft client) {
+   public static int showNetworkStatus(Minecraft client) {
       int ping = MoonNetworkOptimizer.getSmoothedPing();
       double tps = MoonNetworkOptimizer.getSmoothedTps();
-      int fps = MoonNetworkOptimizer.getSmoothedFps();
+      int fps = client.getFps();
       String quality = MoonNetworkOptimizer.getConnectionQualityText();
       double jitter = MoonNetworkOptimizer.getJitter();
       StringBuilder sb = new StringBuilder();
@@ -348,7 +263,7 @@ public final class ZeyaFabricMoonClient implements ClientModInitializer {
       return 1;
    }
 
-   private static int testHypixelServers(Minecraft client) {
+   public static int testHypixelServers(Minecraft client) {
       sendCommandFeedback(client, "Testando servidores do Hypixel...");
       MoonHypixelRouter.testAndSelectBest().thenAccept(best -> client.execute(() -> {
          if (best != null) {
@@ -369,7 +284,7 @@ public final class ZeyaFabricMoonClient implements ClientModInitializer {
    }
 
    private static void sendCommandFeedback(Minecraft client, String message) {
-      client.gui.chatListener().handleSystemMessage(Component.literal("[ZeyaMoon] " + message), false);
+      MoonChatFeedback.send(client, "[ZeyaMoon] " + message);
    }
 
    public static Component toggleLabel(String name, boolean enabled) {

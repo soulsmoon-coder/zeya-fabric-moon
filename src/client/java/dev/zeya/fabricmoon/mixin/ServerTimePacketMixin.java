@@ -1,6 +1,6 @@
 package dev.zeya.fabricmoon.mixin;
 
-import dev.zeya.fabricmoon.MoonServerStats;
+import dev.zeya.fabricmoon.hud.MoonServerStats;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.network.protocol.game.ClientboundSetTimePacket;
 import org.spongepowered.asm.mixin.Mixin;

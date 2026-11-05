@@ -18,14 +18,14 @@ public final class MoonGlobalSettingsScreen extends Screen {
       int top = MoonScreenStyle.panelTop(this.height, 210);
       int buttonWidth = 270;
       int buttonX = centerX - buttonWidth / 2;
-      this.addRenderableWidget(Button.builder(ZeyaFabricMoonClient.toggleLabel("Todas as features", MoonConfig.featuresEnabled), button -> {
+      this.addRenderableWidget(Button.builder(dev.zeya.fabricmoon.MoonScreenStyle.colorLabel(ZeyaFabricMoonClient.toggleLabel("Todas as features", MoonConfig.featuresEnabled)), button -> {
          MoonConfig.featuresEnabled = !MoonConfig.featuresEnabled;
          MoonConfig.save();
          this.clearWidgets();
          this.init();
       }).bounds(buttonX, top + 55, buttonWidth, 22).build());
       this.addRenderableWidget(
-         Button.builder(Component.literal("Voltar"), button -> this.minecraft.gui.setScreen(new MoonSettingsScreen()))
+         Button.builder(dev.zeya.fabricmoon.MoonScreenStyle.colorLabel(Component.literal("Voltar")), button -> this.minecraft.gui.setScreen(new MoonSettingsScreen()))
             .bounds(buttonX, top + 145, buttonWidth, 22)
             .build()
       );
@@ -41,8 +41,8 @@ public final class MoonGlobalSettingsScreen extends Screen {
       super.extractRenderState(graphics, mouseX, mouseY, partialTick);
       int centerX = this.width / 2;
       int top = MoonScreenStyle.panelTop(this.height, 210);
-      graphics.centeredText(this.font, this.title, centerX, top + 18, -1);
-      graphics.centeredText(this.font, "Desativar suspende os recursos e preserva suas configuracoes.", centerX, top + 94, -4799016);
-      graphics.centeredText(this.font, "O painel e os comandos continuam disponiveis.", centerX, top + 110, -7891030);
+      graphics.centeredText(this.font, this.title, centerX, top + 18, MoonConfig.modColorArgb());
+      graphics.centeredText(this.font, "Desativar suspende os recursos e preserva suas configuracoes.", centerX, top + 94, MoonConfig.modColorArgb());
+      graphics.centeredText(this.font, "O painel e os comandos continuam disponiveis.", centerX, top + 110, MoonConfig.modColorArgb());
    }
 }

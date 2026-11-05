@@ -1,6 +1,6 @@
 package dev.zeya.fabricmoon.mixin;
 
-import dev.zeya.fabricmoon.MoonSlotManager;
+import dev.zeya.fabricmoon.macros.MoonSlotManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.MultiPlayerGameMode;
 import net.minecraft.world.entity.player.Player;

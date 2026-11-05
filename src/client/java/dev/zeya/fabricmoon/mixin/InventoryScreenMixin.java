@@ -1,7 +1,7 @@
 package dev.zeya.fabricmoon.mixin;
 
+import dev.zeya.fabricmoon.macros.MoonSlotManager;
 import dev.zeya.fabricmoon.MoonConfig;
-import dev.zeya.fabricmoon.MoonSlotManager;
 import java.util.Map.Entry;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -73,7 +73,7 @@ public abstract class InventoryScreenMixin {
                      int x2 = left + hotbarSlot.x + 8;
                      int y2 = top + hotbarSlot.y + 8;
                      drawLine(graphics, x1, y1, x2, y2, -15722464, 6);
-                     drawLine(graphics, x1, y1, x2, y2, -9251384, 3);
+                     drawLine(graphics, x1, y1, x2, y2, MoonConfig.modColorArgb(), 3);
                      drawSlotMarker(graphics, left + inventorySlot.x, top + inventorySlot.y);
                      drawSlotMarker(graphics, left + hotbarSlot.x, top + hotbarSlot.y);
                   }
@@ -95,9 +95,9 @@ public abstract class InventoryScreenMixin {
 
    private static void drawLock(GuiGraphicsExtractor graphics, int x, int y) {
       graphics.fill(x, y, x + 11, y + 13, -401598686);
-      graphics.fill(x + 2, y + 1, x + 9, y + 7, -11174);
+      graphics.fill(x + 2, y + 1, x + 9, y + 7, MoonConfig.modColorArgb());
       graphics.fill(x + 4, y + 3, x + 7, y + 7, -15722718);
-      graphics.fill(x + 1, y + 6, x + 10, y + 12, -11174);
+      graphics.fill(x + 1, y + 6, x + 10, y + 12, MoonConfig.modColorArgb());
       graphics.fill(x + 5, y + 8, x + 6, y + 10, -15722718);
    }
 
@@ -106,10 +106,10 @@ public abstract class InventoryScreenMixin {
       graphics.fill(x - 2, y + 16, x + 18, y + 18, -15722464);
       graphics.fill(x - 2, y, x, y + 16, -15722464);
       graphics.fill(x + 16, y, x + 18, y + 16, -15722464);
-      graphics.fill(x - 1, y - 1, x + 17, y, -9251384);
-      graphics.fill(x - 1, y + 16, x + 17, y + 17, -9251384);
-      graphics.fill(x - 1, y, x, y + 16, -9251384);
-      graphics.fill(x + 16, y, x + 17, y + 16, -9251384);
+      graphics.fill(x - 1, y - 1, x + 17, y, MoonConfig.modColorArgb());
+      graphics.fill(x - 1, y + 16, x + 17, y + 17, MoonConfig.modColorArgb());
+      graphics.fill(x - 1, y, x, y + 16, MoonConfig.modColorArgb());
+      graphics.fill(x + 16, y, x + 17, y + 16, MoonConfig.modColorArgb());
    }
 
    private static void drawLine(GuiGraphicsExtractor graphics, int x0, int y0, int x1, int y1, int color, int width) {

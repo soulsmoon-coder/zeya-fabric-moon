@@ -1,6 +1,6 @@
 package dev.zeya.fabricmoon.mixin;
 
-import dev.zeya.fabricmoon.MoonPingTracker;
+import dev.zeya.fabricmoon.hud.MoonPingTracker;
 import net.minecraft.client.multiplayer.ClientCommonPacketListenerImpl;
 import net.minecraft.network.protocol.common.ClientboundKeepAlivePacket;
 import org.spongepowered.asm.mixin.Mixin;

@@ -1,7 +1,7 @@
 package dev.zeya.fabricmoon.mixin;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import dev.zeya.fabricmoon.MoonConfig;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.player.AvatarRenderer;
 import net.minecraft.client.renderer.entity.state.AvatarRenderState;
@@ -36,7 +36,7 @@ public abstract class AvatarRendererMixin {
          }
 
          if (MoonConfig.playerGlow) {
-            state.outlineColor = MoonConfig.playerGlowColor;
+            state.outlineColor = MoonConfig.modColor;
          }
       }
    }

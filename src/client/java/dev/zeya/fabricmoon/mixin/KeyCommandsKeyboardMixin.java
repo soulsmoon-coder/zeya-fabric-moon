@@ -1,9 +1,9 @@
 package dev.zeya.fabricmoon.mixin;
 
-import dev.zeya.fabricmoon.MoonKeyCommands;
+import dev.zeya.fabricmoon.macros.MoonKeyCommands;
+import dev.zeya.fabricmoon.macros.MoonSlotManager;
+import dev.zeya.fabricmoon.macros.MoonWardrobeQuickSwap;
 import dev.zeya.fabricmoon.MoonSettingsScreen;
-import dev.zeya.fabricmoon.MoonSlotManager;
-import dev.zeya.fabricmoon.MoonWardrobeQuickSwap;
 import net.minecraft.client.KeyboardHandler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.input.KeyEvent;
